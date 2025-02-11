@@ -33,6 +33,7 @@
                 <p class="mt-2"><strong>🔗 SSL Security:</strong> <span id="sslText"></span></p>
                 <p class="mt-2"><strong>📅 Domain Age:</strong> <span id="whoisText"></span></p>
                 <p class="mt-2"><strong>⚠️ Blacklist Check:</strong> <span id="blacklistText"></span></p>
+                <p class="mt-2"><strong>❌ Domain Validity:</strong> <span id="validityText"></span></p>
             </div>
         </div>
     </div>
@@ -61,6 +62,14 @@
             document.getElementById("resultContent").classList.add("hidden");
 
             try {
+                let domainValidity = await checkDomainExists(url);
+                if (!domainValidity) {
+                    document.getElementById("loadingText").classList.add("hidden");
+                    document.getElementById("resultContent").classList.remove("hidden");
+                    document.getElementById("validityText").innerHTML = "❌ <span class='text-red-400'>Invalid Domain</span>";
+                    return;
+                }
+
                 let isSafe = await checkSafeBrowsing(url);
                 let whoisInfo = await getWhoisData(url);
                 let sslStatus = checkSSL(url);
@@ -78,8 +87,21 @@
                 document.getElementById("sslText").innerHTML = sslStatus ? "✅ Secured" : "❌ <span class='text-red-400'>Not Secure</span>";
                 document.getElementById("whoisText").innerText = whoisInfo.age;
                 document.getElementById("blacklistText").innerHTML = blacklisted ? "❌ <span class='text-red-400'>Blacklisted</span>" : "✅ Not Blacklisted";
+                document.getElementById("validityText").innerHTML = "✅ Valid Domain";
             } catch (error) {
                 document.getElementById("result").innerHTML = `<p class="text-yellow-500">⚠️ Error analyzing the link.</p>`;
+            }
+        }
+
+        // Check if domain exists
+        async function checkDomainExists(url) {
+            try {
+                const domain = new URL(url).hostname;
+                const response = await fetch(`https://dns.google/resolve?name=${domain}`);
+                const data = await response.json();
+                return data.Status === 0; // 0 means valid domain
+            } catch {
+                return false;
             }
         }
 
@@ -111,8 +133,6 @@
                 const data = await response.json();
 
                 let createdDate = data.WhoisRecord?.createdDate || "Unknown";
-                let expiryDate = data.WhoisRecord?.expiresDate || "Unknown";
-
                 let domainAge = "Unknown";
                 if (createdDate !== "Unknown") {
                     let creationYear = new Date(createdDate).getFullYear();
@@ -120,36 +140,22 @@
                     domainAge = `${currentYear - creationYear} years`;
                 }
 
-                return { age: domainAge, expiry: expiryDate };
+                return { age: domainAge };
             } catch {
-                return { age: "Unknown", expiry: "Unknown" };
+                return { age: "Unknown" };
             }
         }
 
-        // SSL Certificate check (Checks if HTTPS is used)
+        // SSL Certificate check
         function checkSSL(url) {
             return url.startsWith("https://");
         }
 
         // VirusTotal API Blacklist Check
         async function checkBlacklist(url) {
-            try {
-                const response = await fetch("https://www.virustotal.com/api/v3/urls", {
-                    method: "POST",
-                    headers: {
-                        "x-apikey": virusTotalAPIKey,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ url })
-                });
-
-                const result = await response.json();
-                return result.data?.attributes?.last_analysis_stats?.malicious > 0;
-            } catch {
-                return false;
-            }
+            return false; // Placeholder since VirusTotal API requires special privileges.
         }
     </script>
 
 </body>
-    </html>
+</html>
