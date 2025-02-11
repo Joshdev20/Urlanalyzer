@@ -44,10 +44,15 @@
         const virusTotalAPIKey = "592b38574c4e6ddf559ed5a85513067e12b3befafca0a66c06589f1363923cee";
 
         async function analyzeURL() {
-            const url = document.getElementById('urlInput').value.trim();
+            let url = document.getElementById('urlInput').value.trim();
             if (!url) {
                 alert("Please enter a URL!");
                 return;
+            }
+
+            // Ensure URL has http/https for consistency
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "https://" + url;
             }
 
             // Show loading state
@@ -57,7 +62,7 @@
 
             try {
                 let isSafe = await checkSafeBrowsing(url);
-                let whoisInfo = await checkWhois(url);
+                let whoisInfo = await getWhoisData(url);
                 let sslStatus = checkSSL(url);
                 let blacklisted = await checkBlacklist(url);
 
@@ -71,7 +76,7 @@
 
                 document.getElementById("safeBrowsingText").innerHTML = isSafe ? "✅ Safe" : "⚠️ <span class='text-red-400'>Unsafe</span>";
                 document.getElementById("sslText").innerHTML = sslStatus ? "✅ Secured" : "❌ <span class='text-red-400'>Not Secure</span>";
-                document.getElementById("whoisText").innerText = whoisInfo;
+                document.getElementById("whoisText").innerText = whoisInfo.age;
                 document.getElementById("blacklistText").innerHTML = blacklisted ? "❌ <span class='text-red-400'>Blacklisted</span>" : "✅ Not Blacklisted";
             } catch (error) {
                 document.getElementById("result").innerHTML = `<p class="text-yellow-500">⚠️ Error analyzing the link.</p>`;
@@ -98,15 +103,26 @@
             return !data.matches;
         }
 
-        // Whois Lookup API check (Domain age & details)
-        async function checkWhois(url) {
+        // Whois Lookup API check (Domain age & expiry)
+        async function getWhoisData(url) {
             try {
                 const domain = new URL(url).hostname;
                 const response = await fetch(`https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=${whoisAPIKey}&domainName=${domain}&outputFormat=json`);
                 const data = await response.json();
-                return data.WhoisRecord && data.WhoisRecord.createdDate ? data.WhoisRecord.createdDate : "Unknown";
+
+                let createdDate = data.WhoisRecord?.createdDate || "Unknown";
+                let expiryDate = data.WhoisRecord?.expiresDate || "Unknown";
+
+                let domainAge = "Unknown";
+                if (createdDate !== "Unknown") {
+                    let creationYear = new Date(createdDate).getFullYear();
+                    let currentYear = new Date().getFullYear();
+                    domainAge = `${currentYear - creationYear} years`;
+                }
+
+                return { age: domainAge, expiry: expiryDate };
             } catch {
-                return "Unknown";
+                return { age: "Unknown", expiry: "Unknown" };
             }
         }
 
@@ -115,7 +131,7 @@
             return url.startsWith("https://");
         }
 
-        // VirusTotal API Blacklist Check (Replaces OpenPhish)
+        // VirusTotal API Blacklist Check
         async function checkBlacklist(url) {
             try {
                 const response = await fetch("https://www.virustotal.com/api/v3/urls", {
@@ -136,4 +152,4 @@
     </script>
 
 </body>
-</html>
+    </html>
