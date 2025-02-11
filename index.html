@@ -11,7 +11,7 @@
     <div class="bg-gray-800 shadow-xl rounded-lg p-6 w-full max-w-lg text-white">
         <h2 class="text-2xl font-bold text-center mb-4">🔍 URL Safety Analyzer</h2>
 
-        <!-- Input Field with Full Responsiveness -->
+        <!-- Input Field -->
         <div class="relative flex flex-col sm:flex-row items-center gap-3">
             <input type="text" id="urlInput" placeholder="Enter a URL..." 
                    class="w-full sm:w-[70%] px-4 py-3 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -25,7 +25,10 @@
         <div id="result" class="mt-6 p-4 bg-gray-700 rounded-md text-sm shadow-md hidden">
             <p id="loadingText" class="text-gray-400 text-center">Analyzing... Please wait.</p>
             <div id="resultContent" class="hidden">
-                <p class="mt-2"><strong>🔗 URL:</strong> <span id="urlText"></span></p>
+                <p class="mt-2">
+                    <strong>🔗 URL:</strong> 
+                    <span id="urlText" class="block text-ellipsis overflow-hidden whitespace-nowrap w-full hover:text-blue-400 cursor-pointer"></span>
+                </p>
                 <p class="mt-2"><strong>🛡️ Safe Browsing:</strong> <span id="safeBrowsingText"></span></p>
                 <p class="mt-2"><strong>🔗 SSL Security:</strong> <span id="sslText"></span></p>
                 <p class="mt-2"><strong>📅 Domain Age:</strong> <span id="whoisText"></span></p>
@@ -61,8 +64,11 @@
                 document.getElementById("loadingText").classList.add("hidden");
                 document.getElementById("resultContent").classList.remove("hidden");
 
-                // Update UI
-                document.getElementById("urlText").innerText = url;
+                // Update UI with truncated URL + hover tooltip
+                let urlElement = document.getElementById("urlText");
+                urlElement.innerText = url.length > 40 ? url.slice(0, 40) + "..." : url;
+                urlElement.setAttribute("title", url);
+
                 document.getElementById("safeBrowsingText").innerHTML = isSafe ? "✅ Safe" : "⚠️ <span class='text-red-400'>Unsafe</span>";
                 document.getElementById("sslText").innerHTML = sslStatus ? "✅ Secured" : "❌ <span class='text-red-400'>Not Secure</span>";
                 document.getElementById("whoisText").innerText = whoisInfo;
@@ -130,4 +136,4 @@
     </script>
 
 </body>
-    </html>
+</html>
